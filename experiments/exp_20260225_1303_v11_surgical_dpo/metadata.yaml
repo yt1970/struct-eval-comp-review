@@ -1,0 +1,35 @@
+title: "V11 Surgical DPO: Intelligence + Silence Hybrid Alignment"
+timestamp: "2026-02-25_1303"
+summary: "知能の覇者であるDPO3(0.77)と、沈黙のプロトタイプであるV10(Iter 100)を外科的にマージし、DPOによって『賢く、かつ沈黙を保つ』モデルを再構築する実験。"
+objective: |
+  0.77モデル（DPO3）の持つ高い構造化能力を維持したまま、どうしても残ってしまう「お喋り癖（Preamble/Markdown）」を
+  V10の沈黙性を移植することで完全に除去し、スコア0.80の壁を突破する。
+methodology: |
+  1. マージ: ベースモデル(Qwen3-4B-Instruct)に対し、以下の2つを順次マージする。
+     - DPO3 アダプター (推論能力の維持)
+     - V10 Iter 100 アダプター (沈黙性の導入)
+  2. DPO学習: この合体モデルをスタート地点とし、新たなLoRA層（q_proj, v_proj限定）を導入。
+  3. アライメント: 『Chosen (沈黙・純粋データ)』と『Rejected (お喋り・Markdown汚染)』のペアを用いて、知能を落とさず振る舞いだけを矯正する。
+hyperparameters:
+  max_steps: 50
+  learning_rate: 2e-6
+  batch_size: 1
+  gradient_accumulation_steps: 8
+  beta: 0.1
+  lora_r: 16
+  lora_alpha: 32
+  target_modules: ["q_proj", "v_proj"]
+data_source: |
+  - 学習データ: `data/hf_datasets/structured-hard-sft-4k.jsonl` (コンペ許可済みデータ)
+  - 加工プロセス: 完全に機械的なプログラム(正規表現等)によるクレンジング(Chosen)およびノイズ付加(Rejected)。
+  - 注意: `public_150.json` (評価用) および LLMによる生成データは一切使用していない。
+compliance_statement: |
+  本実験はコンペ規約を厳格に遵守している。
+  - 使用データは全て `/data/hf_datasets` 内のもの、またはその機械的加工版である。
+  - LLMによるデータ生成（合成データ・蒸留・ラベリング）は一切行っていない。
+  - プロンプトエンジニアリングや後処理によるハックではなく、モデルの重み自体をアライメントしている。
+  - 推論時に `public_150` の情報を参照することはない。
+expected_results: |
+  パースエラーを引き起こしていたPreambleとMarkdownが消滅し、構造化能力を100%スコアに反映させることで0.80以上を達成する。
+actual_results: "Training completed successfully (2026-02-25 18:30 JST). V11 Adapter saved at adapters/adapter_v11_surgical_dpo."
+next_steps: "学習完了後、検証スクリプトによる沈黙率と正答率のダブルチェックを実施。"
